@@ -6,7 +6,6 @@ def sinusoidal_positional_encoding(max_position, d_model):
     # The original formula pos / 10000^(2i/d_model) is equivalent to pos * (1 / 10000^(2i/d_model)).
     # I use the below version for numerical stability
     div_term = np.exp(np.arange(0, d_model, 2) * -(np.log(10000.0) / d_model))
-    print(np.log(10000))
     
     pe = np.zeros((max_position, d_model))
     pe[:, 0::2] = np.sin(position * div_term)
