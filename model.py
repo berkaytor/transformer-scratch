@@ -155,7 +155,7 @@ class DecoderBlock(nn.Module):
     def forward(self, x, encoder_output, src_mask, tgt_mask):
         x = self.residual_connections[0](x, lambda x: self.self_attention_block(x, x, x, tgt_mask))
         x = self.residual_connections[1](x, lambda x: self.cross_attention_block(x, encoder_output, encoder_output, src_mask))
-        x = self.residual_connections[1](x, FeedForwardBlock)
+        x = self.residual_connections[1](x, self.feed_forward_block)
         return x
     
 class Decoder(nn.Module):
@@ -223,7 +223,6 @@ def build_transformer(src_vocab_size: int, tgt_vocab_size: int, src_seq_len: int
         decoder_cross_attention_block = MultiHeadAttentionBlock(d_model, h, dropout)
         feed_forward_block = FeedForwardBlock(d_model, d_ff, dropout)
         decoder_block = DecoderBlock(decoder_self_attention_block, decoder_cross_attention_block, feed_forward_block, dropout)
-        decoder_block.append(decoder_block) 
         decoder_blocks.append(decoder_block)
 
     encoder = Encoder(nn.ModuleList(encoder_blocks))

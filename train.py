@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, random_split
 
-from dataset import BilingualDataset, casual_mask
+from dataset import BilingualDataset, causal_mask
 from model import build_transformer
 
 from datasets import load_dataset
@@ -28,7 +28,7 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
         if decoder_input.size(1) == max_len:
             break
 
-        decoder_mask = casual_mask(decoder_input.size(1)).type_as(source_mask).to(device)
+        decoder_mask = causal_mask(decoder_input.size(1)).type_as(source_mask).to(device)
 
         out = model.decode(encoder_output, source_mask, decoder_input, decoder_mask)
 
@@ -51,7 +51,7 @@ def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, 
         for batch in validation_ds:
             count += 1
             encoder_input = batch['encoder_input'].to(device)
-            encoder_mask = batch('encoder_mask').to(device)
+            encoder_mask = batch['encoder_mask'].to(device)
 
             assert encoder_input.size(0) ==1, "Batch size must be 1 for validation"
 
@@ -79,7 +79,7 @@ def get_or_build_tokenizer(config, ds, lang):
     if not Path.exists(tokenizer_path):
         tokenizer = Tokenizer(WordLevel(unk_token='[UNK]'))
         tokenizer.pre_tokenizer = Whitespace()
-        trainer = WordLevelTrainer(special_tokens=["[UNK]", "[PAD]", "[SOS]", "EOS"], min_frequency = 2)
+        trainer = WordLevelTrainer(special_tokens=["[UNK]", "[PAD]", "[SOS]", "[EOS]"], min_frequency = 2)
         tokenizer.train_from_iterator(get_all_sentences(ds, lang), trainer = trainer)
         tokenizer.save(str(tokenizer_path))
     else:
@@ -141,7 +141,7 @@ def train_model(config):
 
     loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer_src.token_to_id('[PAD]'), label_smoothing=0.1).to(device)
 
-    for epoch in range(initial_epoch, config['num_epoch']):
+    for epoch in range(initial_epoch, config['num_epochs']):
         model.train()
         batch_iterator = tqdm(train_dataloader, desc=f'Processing epoch {epoch:02d}')
         for batch in batch_iterator:
@@ -151,7 +151,7 @@ def train_model(config):
             decoder_mask = batch['decoder_mask'].to(device)
 
             encoder_output = model.encode(encoder_input, encoder_mask)
-            decoder_output = model.decode(decoder_input, encoder_mask, decoder_input, decoder_mask)
+            decoder_output = model.decode(encoder_output, encoder_mask, decoder_input, decoder_mask)
             proj_output = model.project(decoder_output)
 
             label = batch['label'].to(device)
