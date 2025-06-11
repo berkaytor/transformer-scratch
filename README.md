@@ -1,5 +1,3 @@
-# Transformer from Scratch
-
 A minimal implementation of a Transformer-based sequence-to-sequence model for English-Russian translation, built from scratch using PyTorch.
 
 ## Features
